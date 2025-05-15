@@ -1,0 +1,16 @@
+# Ignore logs and generated CSVs
+logs/*
+csv/output/*
+csv/input/*
+
+# Ignore config except template
+config/*.psd1
+!config/ClientTemplate.psd1
+
+#  VS Code settings, OS files, PS session files…
+.vscode/
+.DS_Store
+Thumbs.db
+*.ps1xml
+*.psc1
+*.pssc
