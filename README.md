@@ -38,7 +38,11 @@ A turnkey PowerShell solution for **AWS-only** environments that streamlines:
 
 > 📌 This tool is built **exclusively for AWS** environments.
 
+
+
 ---
+
+
 
 ## 🔧 2. Prerequisites
 
@@ -63,7 +67,11 @@ FinOpsTaggingTool.ps1  # Main entry script
 README.md              # This file (project overview)
 ```
 
+
+
 ---
+
+
 
 ## ⚙️ 4. Configuration
 
@@ -83,7 +91,11 @@ README.md              # This file (project overview)
 
 📘 More info in [config/README.md](config/README.md)
 
+
+
 ---
+
+
 
 ## 🛠️ 5. Usage
 
@@ -116,23 +128,36 @@ pwsh .\FinOpsTaggingTool.ps1
 * Select your config, pick **Apply**, confirm account and service
 * Tags will be applied based on edited CSVs
 
+
+
 ---
+
+
 
 ## 🧠 6. Internals
 
 * All AWS service-specific logic lives in [scripts/core/README.md](scripts/core/README.md)
 * General helper utilities (menus, SSO auth, logs) live in [scripts/functions/README.md](scripts/functions/README.md)
 * Input/Output CSV rules are documented in [csv/README.md](csv/README.md)
-* Configuration details covered in [config/README.md](config/README.md)
+* Configuration details
+*  covered in [config/README.md](config/README.md)
+
+
 
 ---
+
+
 
 ## 📩 7. Support & Next Steps
 
 * **Logs**: Check `logs/` folder for detailed operation output
 * **Extend**: Add support for more AWS services using `Export-*` and `Set-ResourceTagsFromCsv.ps1`
 
+
+
 ---
+
+
 
 > Created by **Florent Lanternier**
 > TeamWork FinOps Team
