@@ -1,7 +1,7 @@
 # Ignore logs and generated CSVs
 logs/*
-csv/output/*
-csv/input/*
+csv/output/*.csv
+csv/input/*.csv
 
 # Ignore config except template
 config/*.psd1
