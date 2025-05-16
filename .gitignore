@@ -1,5 +1,5 @@
 # Ignore logs and generated CSVs
-logs/*
+logs/*.txt
 csv/output/*.csv
 csv/input/*.csv
 
