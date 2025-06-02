@@ -25,13 +25,14 @@ function Export-EC2Instances {
 
                     foreach ($Instance in $Instances.Instances) {
                         $InstanceData = [PSCustomObject]@{
-                            AccountId    = $Account.accountId
-                            AccountName  = $Account.name
-                            Region       = $Region
-                            InstanceId   = $Instance.InstanceId
-                            InstanceType = $Instance.InstanceType
-                            State        = $Instance.State.Name
-                            LaunchTime   = $Instance.LaunchTime
+                            AccountId        = $Account.accountId
+                            AccountName      = $Account.name
+                            Region           = $Region
+                            InstanceId       = $Instance.InstanceId
+                            InstanceType     = $Instance.InstanceType
+                            State            = $Instance.State.Name
+                            LaunchTime       = $Instance.LaunchTime
+                            PlateformDetails = $Instance.PlateformDetails
                         }
 
                         foreach ($TagKey in $RequiredTagKeys) {

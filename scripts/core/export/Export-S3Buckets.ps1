@@ -50,9 +50,7 @@ function Export-S3Buckets {
                         -Region $Region -ErrorAction Stop
 
                     foreach ($t in $tagging.TagSet) {
-                        if ($t.Key -in $RequiredTagKeys) {
-                            $BktData.$($t.Key) = $t.Value
-                        }
+                        $BktData.$($t.Key) = $t.Value
                     }
                 }
                 catch [Amazon.S3.AmazonS3Exception] {
