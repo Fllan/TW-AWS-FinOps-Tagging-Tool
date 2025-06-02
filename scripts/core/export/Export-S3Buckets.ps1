@@ -45,12 +45,16 @@ function Export-S3Buckets {
 
                 # Fetch and apply existing tags
                 try {
-                    $tagging = Get-S3BucketTagging -BucketName $bucketName `
-                        -ProfileName $Account.profileName `
-                        -Region $Region -ErrorAction Stop
+                    $tagging = Get-S3BucketTagging -BucketName $bucketName -ProfileName $Account.profileName -Region $Region -ErrorAction Stop
 
-                    foreach ($t in $tagging.TagSet) {
-                        $BktData.$($t.Key) = $t.Value
+                    foreach ($t in $tagging) {
+                        $tagKey = $t.Key
+                        if ($RequiredTagKeys -contains $tagKey) {
+                            $BktData.$tagKey = $t.Value
+                        }
+                        else {
+                            $BktData | Add-Member -MemberType NoteProperty -Name $tagKey -Value $t.Value -Force
+                        }
                     }
                 }
                 catch [Amazon.S3.AmazonS3Exception] {
