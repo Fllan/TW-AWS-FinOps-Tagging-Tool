@@ -7,6 +7,7 @@ $ScriptDir = $PSScriptRoot
 . "$ScriptDir\scripts\functions\Initialize-AndConnectAwsAccount.ps1"
 . "$ScriptDir\scripts\functions\Get-MenuSelection.ps1"
 . "$ScriptDir\scripts\core\export\Export-EC2Instances.ps1"
+. "$ScriptDir\scripts\core\export\Export-EC2OnDemandAndSPRates.ps1"
 . "$ScriptDir\scripts\core\export\Export-EC2Volumes.ps1"
 . "$ScriptDir\scripts\core\export\Export-S3Buckets.ps1"
 . "$ScriptDir\scripts\core\export\Export-EFSFileSystems.ps1"
@@ -36,7 +37,7 @@ Write-LogInformation "Configuration file loaded"
 
 #–– CHOICES ––#
 $accounts = $config.accounts
-$services = @("ec2-instances", "ec2-volumes", "s3-buckets", "efs", "rds")
+$services = @("ec2-instances", "ec2-ondemand-sp-rates", "ec2-volumes", "s3-buckets", "efs", "rds")
 $actions = @("Export", "Apply")
 
 $selAcct = Get-MenuSelection "Choose account(s):" ($accounts | ForEach-Object Name)
@@ -81,6 +82,12 @@ foreach ($acctIdx in $selAcct) {
                             -LogFilePath   $LogFile `
                             -OutputCsvDir  (Join-Path $ScriptDir 'csv\output') `
                             -RequiredTagKeys $config.requiredTagKeys
+                    }
+                    'ec2-ondemand-sp-rates' {
+                        Export-EC2OnDemandAndSPRates -Account       $acct `
+                            -Regions       $acct.regions `
+                            -LogFilePath   $LogFile `
+                            -OutputCsvDir  (Join-Path $ScriptDir 'csv\output')
                     }
                     'ec2-volumes' {
                         Export-EC2Volumes -Account       $acct `

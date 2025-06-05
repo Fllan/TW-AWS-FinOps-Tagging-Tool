@@ -25,7 +25,7 @@ A turnkey PowerShell solution for **AWS-only** environments that streamlines:
 3. **Install required AWS modules** (admin rights required):
 
    ```powershell
-   Install-Module -Name AWS.Tools.Common, AWS.Tools.EC2, AWS.Tools.S3, AWS.Tools.ElasticFileSystem, AWS.Tools.RDS -Force
+   Install-Module -Name AWS.Tools.Common, AWS.Tools.EC2, AWS.Tools.S3, AWS.Tools.ElasticFileSystem, AWS.Tools.RDS, AWS.Tools.SavingsPlans, AWS.Tools.Pricing -Force
    ```
 
 4. **Ensure SSO access**: You must be able to authenticate with AWS using `aws sso login` or equivalent
