@@ -14,10 +14,15 @@ function Export-EC2OnDemandAndSPRates {
     $RatesTable = @{}
 
     $SavingsPlanType = "EC2Instance" # [EC2Instance, Compute]
-    $SavingsPlanPaymentOption = "No Upfront"
+    $SavingsPlanPaymentOption = "No Upfront" # [No Upfront, Partial Upfront, All Upfront]
     $SavingsPlanDurationSeconds = 94608000 # 3 years for AWS
     $Currency = "USD"
     $Tenancy = "shared"
+
+    Write-Log -Message "Savings Plan configured for : $SavingsPlanType (SavingsPlan Type) - $SavingsPlanPaymentOption (Payment option) - $($SavingsPlanDurationSeconds / (365*24*60*60)) year(s) (Term length) - $Currency (Currency) - $Tenancy (Tenancy)" -Level "WARN" -LogFilePath $LogFilePath
+
+    $cacheHits = 0
+    $totalApiCalls = 0
 
     foreach ($Region in $Regions) {
         Write-Log -Message "Getting EC2 instances in region '$Region' using profile '$($Account.profileName)'..." -Level "INFO" -LogFilePath $LogFilePath
@@ -30,24 +35,9 @@ function Export-EC2OnDemandAndSPRates {
 
                 foreach ($Instance in $Instances.Instances) {
 
-                    # ################### Debug output
-                    # Write-Host "$'instance' result + InstanceType:" -ForegroundColor Yellow
-                    # $nameTag = $Instance.Tags | Where-Object { $_.Key -eq 'Name' } | Select-Object -ExpandProperty Value
-                    # if ($nameTag) {
-                    #     Write-Host $nameTag -ForegroundColor Yellow
-                    # }
-                    # else {
-                    #     Write-Host "(No Name tag found)" -ForegroundColor DarkGray
-                    # }
-                    # Write-Host $Instance.InstanceType -ForegroundColor Yellow
-                    # ################### Debug output
+                    $InstanceNameTag = $Instance.Tags | Where-Object { $_.Key -eq 'Name' } | Select-Object -ExpandProperty Value
 
                     $productDescription = $Instance.PlatformDetails
-                    
-                    # ################### Debug output
-                    # Write-Host "$'productDescription' result:" -ForegroundColor Yellow
-                    # Write-Host $productDescription -ForegroundColor Yellow
-                    # ################### Debug output
 
                     $key = "$($Region)|$($Instance.InstanceType)|$productDescription"
 
@@ -62,19 +52,21 @@ function Export-EC2OnDemandAndSPRates {
                             @{ Name = "InstanceFamily"; Values = @($instanceFamily) }
                         )
 
-                        $SPOffering = Get-SPSavingsPlansOffering -ProfileName $Account.profileName -Region $Region `
-                            -Filter $OfferingFilter `
-                            -Currency $Currency `
-                            -Duration $SavingsPlanDurationSeconds `
-                            -PaymentOption $SavingsPlanPaymentOption `
-                            -PlanType $SavingsPlanType `
-                            -ProductType "EC2" `
-                            -ServiceCode "ComputeSavingsPlans"
-                        
-                        # ################### Debug output
-                        # Write-Host "SPOffering result:" -ForegroundColor Yellow
-                        # $SPOffering | Format-List *
-                        # ################### Debug output
+                        try {
+                            $totalApiCalls++
+
+                            $SPOffering = Get-SPSavingsPlansOffering -ProfileName $Account.profileName -Region $Region `
+                                -Filter $OfferingFilter `
+                                -Currency $Currency `
+                                -Duration $SavingsPlanDurationSeconds `
+                                -PaymentOption $SavingsPlanPaymentOption `
+                                -PlanType $SavingsPlanType `
+                                -ProductType "EC2" `
+                                -ServiceCode "ComputeSavingsPlans"
+                        }
+                        catch {
+                            Write-Log -Message "Error fetching SavingsPlan Offering for key : $key : $($_.Exception.Message)" -Level "ERROR" -LogFilePath $LogFilePath
+                        }
                         
                         $OfferingRateFilter = @(
                             @{ Name = "Region"; Values = @($Region) },
@@ -84,74 +76,64 @@ function Export-EC2OnDemandAndSPRates {
                             @{ Name = "Tenancy"; Values = @($Tenancy) }
                         )
 
-                        $SPOfferingRate = Get-SPSavingsPlansOfferingRate -ProfileName $Account.profileName -Region $Region `
-                            -Filter $OfferingRateFilter `
-                            -UsageType $usageType `
-                            -SavingsPlanOfferingId $SPOffering.OfferingId
+                        try {
+                            $totalApiCalls++
 
-                        # ################### Debug output
-                        # Write-Host "SPOfferingRate result:" -ForegroundColor Yellow
-                        # $SPOfferingRate | Format-List *
+                            $SPOfferingRate = Get-SPSavingsPlansOfferingRate -ProfileName $Account.profileName -Region $Region `
+                                -Filter $OfferingRateFilter `
+                                -UsageType $usageType `
+                                -SavingsPlanOfferingId $SPOffering.OfferingId
 
-                        # foreach ($rate in $SPOfferingRate) {
-                        #     Write-Host "UsageType: $($rate.UsageType)"
-                        #     foreach ($prop in $rate.Properties) {
-                        #         Write-Host " - $($prop.Name): $($prop.Value)"
-                        #     }
-                        #     Write-Host ""
-                        # }
-                        # ################### Debug output
-
-                        # $ServiceMetadata = Get-PLSService -ProfileName $Account.profileName -Region $Region `
-                        #     -ServiceCode "AmazonEC2"
-
-                        # ################### Debug output
-                        # Write-Host "ServiceMetadata result:" -ForegroundColor Yellow
-                        # $ServiceMetadata | Format-List *
-                        # # foreach ($attribue in $ServiceMetadata.AttributeNames) {
-                        # #     Write-Host " - $attribue" 
-                        # # }
-                        # ################### Debug output
-
-                        $filters = @(
-                            # @{Type = "TERM_MATCH"; Field = "instanceType"; Value = $Instance.InstanceType },
-                            # @{Type = "TERM_MATCH"; Field = "operatingSystem"; Value = $productDescription },
-                            # @{Type = "TERM_MATCH"; Field = "tenancy"; Value = $Tenancy },
-                            # @{Type = "TERM_MATCH"; Field = "regionCode"; Value = $Region },
-                            # @{Type = "TERM_MATCH"; Field = "capacitystatus"; Value = "Used" },
+                        }
+                        catch {
+                            Write-Log -Message "Error fetching SavingsPlan Offering Rate for key : $key : $($_.Exception.Message)" -Level "ERROR" -LogFilePath $LogFilePath
+                        }
+                        
+                        $OnDemandFilter = @(
                             @{Type = "TERM_MATCH"; Field = "usagetype"; Value = $usageType },
                             @{Type = "TERM_MATCH"; Field = "marketoption"; Value = "OnDemand" },
                             @{Type = "TERM_MATCH"; Field = "operation"; Value = $SPOfferingRate.Operation }
                         )
+    
+                        try {
+                            $totalApiCalls++
 
-                        $ProductJSONResult = Get-PLSProduct -ProfileName $Account.profileName -Region $Region `
-                            -ServiceCode "AmazonEC2" `
-                            -Filter $filters
+                            # The region is forced to 'eu-central-1' to avoid "An error occurred while sending the request."
+                            # No idea why... But now it is working
+                            $ProductJSONResult = Get-PLSProduct -ProfileName $Account.profileName -Region "eu-central-1" `
+                                -ServiceCode "AmazonEC2" `
+                                -Filter $OnDemandFilter
 
-                        $ProductObject = $ProductJSONResult | ConvertFrom-Json
-
-                        $onDemandTerms = $ProductObject.terms.OnDemand
-                        $firstOnDemandOffer = $onDemandTerms.PSObject.Properties.Value | Select-Object -First 1
-                        $priceDimensions = $firstOnDemandOffer.priceDimensions.PSObject.Properties.Value
-                        $hourlyPriceDimension = $priceDimensions | Where-Object { $_.unit -eq "Hrs" }
-                        $OnDemandprice = $hourlyPriceDimension.pricePerUnit.USD
-
-                        # ################### Debug output
-                        # Write-Host "On-Demand Price: `$$OnDemandprice per hour"
-                        # Write-Host "ProductJSONResult result:" -ForegroundColor Yellow
-                        # $ProductJSONResult | Format-List *
-                        # ################### Debug output
-
+                            $ProductObject = $ProductJSONResult | ConvertFrom-Json
+        
+                            $onDemandTerms = $ProductObject.terms.OnDemand
+                            $firstOnDemandOffer = $onDemandTerms.PSObject.Properties.Value | Select-Object -First 1
+                            $priceDimensions = $firstOnDemandOffer.priceDimensions.PSObject.Properties.Value
+                            $hourlyPriceDimension = $priceDimensions | Where-Object { $_.unit -eq "Hrs" }
+                            $OnDemandprice = $hourlyPriceDimension.pricePerUnit.USD
+                        }
+                        catch {
+                            Write-Log -Message "Error fetching OnDemand Rate for key : $key : $($_.Exception.Message)" -Level "ERROR" -LogFilePath $LogFilePath
+                        }
+                        
                         $RatesTable[$key] = @{
                             'OnDemand'    = $OnDemandprice
                             'SavingsPlan' = $SPOfferingRate.Rate
                         }
+
+                        Write-Log -Message "Cached rates for key $key" -Level "INFO" -LogFilePath $LogFilePath
+                    }
+                    else {
+                        $cacheHits++
+
+                        Write-Log -Message "Using cached rates (Cache hits $cacheHits) for the key : $key" -Level "INFO" -LogFilePath $LogFilePath
                     }
 
                     $ExportData += [PSCustomObject]@{
                         AccountId         = $Account.accountId
                         AccountName       = $Account.name
                         InstanceId        = $Instance.InstanceId
+                        InstanceTagName   = $InstanceNameTag
                         InstanceFamily    = $instanceFamily
                         InstanceType      = $Instance.InstanceType
                         Region            = $Region
@@ -182,14 +164,18 @@ function Export-EC2OnDemandAndSPRates {
         Write-Log -Message "Exported $($ExportData.Count) EC2 instances to CSV." -Level "INFO" -LogFilePath $LogFilePath
     }
     else {
-        Write-Warning "No instance data to export for $($Account.name)"
+        Write-Log -Message "No instance data to export for $($Account.name)" -Level "WARN" -LogFilePath $LogFilePath
     }
+
+    Write-Log -Message "Total API calls made : $totalApiCalls" -Level "WARN" -LogFilePath $LogFilePath
+    Write-Log -Message "Cache hits : $cacheHits" -Level "WARN" -LogFilePath $LogFilePath
+    Write-Log -Message "Unique rate combinations cached : $($RatesTable.Keys.Count)" -Level "WARN" -LogFilePath $LogFilePath
 }
 
 function Get-UsageTypeRegion($region) {
     switch ($region) {
         "eu-central-1" { return "EUC1" }
-        "eu-west-1" { return "EUW1" }
+        "eu-west-1" { return "EU" }
         default { throw "Unknown region code for $region" }
     }
 }
