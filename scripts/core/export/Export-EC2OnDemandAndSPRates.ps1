@@ -36,20 +36,20 @@ function Export-EC2OnDemandAndSPRates {
                 foreach ($Instance in $Instances.Instances) {
 
                     $InstanceNameTag = $Instance.Tags | Where-Object { $_.Key -eq 'Name' } | Select-Object -ExpandProperty Value
-
+                    $InstanceType = $Instance.InstanceType
+                    $InstanceFamily = "$($InstanceType)".Split('.')[0] # 't3.micro' → 't3'
                     $productDescription = $Instance.PlatformDetails
 
-                    $key = "$($Region)|$($Instance.InstanceType)|$productDescription"
+                    $key = "$($Region)|$($InstanceType)|$productDescription"
 
                     if (-not $RatesTable.ContainsKey($key)) {
 
-                        $instanceFamily = "$($Instance.InstanceType)".Split('.')[0] # 't3.micro' → 't3'
                         $UsageTypeRegion = Get-UsageTypeRegion($Region)
-                        $usageType = "$($UsageTypeRegion)-BoxUsage:$($Instance.InstanceType)"
+                        $usageType = "$($UsageTypeRegion)-BoxUsage:$($InstanceType)"
 
                         $OfferingFilter = @(
                             @{ Name = "Region"; Values = @($Region) },
-                            @{ Name = "InstanceFamily"; Values = @($instanceFamily) }
+                            @{ Name = "InstanceFamily"; Values = @($InstanceFamily) }
                         )
 
                         try {
@@ -70,8 +70,8 @@ function Export-EC2OnDemandAndSPRates {
                         
                         $OfferingRateFilter = @(
                             @{ Name = "Region"; Values = @($Region) },
-                            @{ Name = "InstanceFamily"; Values = @($instanceFamily) },
-                            @{ Name = "InstanceType"; Values = @($Instance.InstanceType) },
+                            @{ Name = "InstanceFamily"; Values = @($InstanceFamily) },
+                            @{ Name = "InstanceType"; Values = @($InstanceType) },
                             @{ Name = "ProductDescription"; Values = @($productDescription) },
                             @{ Name = "Tenancy"; Values = @($Tenancy) }
                         )
@@ -134,8 +134,8 @@ function Export-EC2OnDemandAndSPRates {
                         AccountName       = $Account.name
                         InstanceId        = $Instance.InstanceId
                         InstanceTagName   = $InstanceNameTag
-                        InstanceFamily    = $instanceFamily
-                        InstanceType      = $Instance.InstanceType
+                        InstanceFamily    = $InstanceFamily
+                        InstanceType      = $InstanceType
                         Region            = $Region
                         OperatingSystem   = $productDescription
                         OnDemandRate      = $RatesTable[$key].OnDemand
@@ -158,7 +158,7 @@ function Export-EC2OnDemandAndSPRates {
     if ($ExportData.Count -gt 0) {
         $timestamp = (Get-Date).ToString("yyyyMMddHHmmss")
         $safeName = $Account.name -replace '[^a-zA-Z0-9_.-]', '_'
-        $outputPath = Join-Path $OutputCsvDir "$safeName-EC2-Savings-Plan-export-$timestamp.csv"
+        $outputPath = Join-Path $OutputCsvDir "$timestamp-$safeName-EC2-Savings-Plan-export.csv"
         Write-Host "Exporting to $outputPath" -ForegroundColor Cyan
         $ExportData | Export-Csv -Path $outputPath -NoTypeInformation -Force
         Write-Log -Message "Exported $($ExportData.Count) EC2 instances to CSV." -Level "INFO" -LogFilePath $LogFilePath
