@@ -1,6 +1,6 @@
 # Ignore logs and generated CSVs
 logs/*.txt
-csv/output/*.csv
+csv/output/*
 csv/input/*.csv
 
 # Ignore config except template

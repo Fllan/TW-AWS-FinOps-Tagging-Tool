@@ -14,6 +14,7 @@ $ScriptDir = $PSScriptRoot
 . "$ScriptDir\scripts\core\export\Export-RDSDBInstances.ps1"
 . "$ScriptDir\scripts\core\apply\Set-ResourceTagsFromCsv.ps1"
 . "$ScriptDir\scripts\core\export\Update-BadTagValuesOnSnapshots.ps1"
+. "$ScriptDir\scripts\core\export\Export-EC2SavingsPlans.ps1"
 
 
 
@@ -38,7 +39,7 @@ Write-LogInformation "Configuration file loaded"
 
 #–– CHOICES ––#
 $accounts = $config.accounts
-$services = @("ec2-instances", "ec2-ondemand-sp-rates", "ec2-volumes", "s3-buckets", "efs", "rds", "badtags")
+$services = @("ec2-instances", "ec2-savings-plans", "ec2-ondemand-sp-rates", "ec2-volumes", "s3-buckets", "efs", "rds", "badtags")
 $actions = @("Export", "Apply")
 
 $selAcct = Get-MenuSelection "Choose account(s):" ($accounts | ForEach-Object Name)
@@ -77,6 +78,12 @@ foreach ($acctIdx in $selAcct) {
         switch ($actions[$selAct].ToLower()) {
             'export' {
                 switch ($svc) {
+                    'ec2-savings-plans' {
+                        Export-EC2SavingsPlans -Account $acct `
+                            -Regions       $acct.regions `
+                            -LogFilePath   $LogFile `
+                            -OutputCsvDir  (Join-Path $ScriptDir 'csv\output')
+                    }
                     'badtags' {
                         Update-BadTagValuesOnSnapshots -Account       $acct `
                             -Regions       $acct.regions `
