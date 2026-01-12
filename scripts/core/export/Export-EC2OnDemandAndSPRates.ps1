@@ -62,7 +62,7 @@ function Export-EC2OnDemandAndSPRates {
                                 -PaymentOption $SavingsPlanPaymentOption `
                                 -PlanType $SavingsPlanType `
                                 -ProductType "EC2" `
-                                -ServiceCode "ComputeSavingsPlans"
+                                -ServiceCode "ComputeSavingsPlans" | Select-Object -First 1
                         }
                         catch {
                             Write-Log -Message "Error fetching SavingsPlan Offering for key : $key : $($_.Exception.Message)" -Level "ERROR" -LogFilePath $LogFilePath
@@ -82,7 +82,7 @@ function Export-EC2OnDemandAndSPRates {
                             $SPOfferingRate = Get-SPSavingsPlansOfferingRate -ProfileName $Account.profileName -Region $Region `
                                 -Filter $OfferingRateFilter `
                                 -UsageType $usageType `
-                                -SavingsPlanOfferingId $SPOffering.OfferingId
+                                -SavingsPlanOfferingId $SPOffering.OfferingId | Select-Object -First 1
 
                         }
                         catch {
