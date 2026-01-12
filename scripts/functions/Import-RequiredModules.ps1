@@ -6,6 +6,7 @@ $RequiredAwsModules = @(
     "AWS.Tools.RDS"
     "AWS.Tools.SavingsPlans"
     "AWS.Tools.Pricing"
+    "AWS.Tools.MarketplaceAgreement"
 )
 
 Write-Host -ForegroundColor Cyan "Checking for required AWS PowerShell modules..."
