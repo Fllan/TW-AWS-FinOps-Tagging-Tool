@@ -1,57 +1,47 @@
-# scripts/functions/README.md
+# Utility Functions
 
-This directory contains utility functions used by the main `FinOpsTaggingTool.ps1` and the core export/apply scripts:
+Reusable functions for SSO authentication, logging, menus, and module management.
 
-| File                                  | Purpose                                                                                |
-| ------------------------------------- | -------------------------------------------------------------------------------------- |
-| `Get-MenuSelection.ps1`               | Presents a numbered menu to the user and returns selected option indices.              |
-| `Import-RequiredModules.ps1`          | Verifies and imports all required AWS PowerShell modules, exiting on failure.          |
-| `Initialize-AndConnectAwsAccount.ps1` | Establishes or validates an AWS SSO session for a given account/profile.               |
-| `Write-Log.ps1`                       | Centralized logging function to write colored console output and append to a log file. |
+## Functions
 
----
+| Function | Purpose |
+|----------|---------|
+| `Get-MenuSelection.ps1` | Interactive numbered menu, returns selected indices |
+| `Import-RequiredModules.ps1` | Verify and import AWS PowerShell modules |
+| `Initialize-AndConnectAwsAccount.ps1` | Establish/validate AWS SSO session |
+| `Write-Log.ps1` | Console and file logging with color output |
 
-## Usage Patterns
+## Usage
 
-### 1. Menu Prompt
-
+### Menu Selection
 ```powershell
-# Display a prompt with options and capture selected indices
-$indices = Get-MenuSelection -Prompt 'Choose services to export:' -Options @('EC2', 'S3', 'RDS')
+$indices = Get-MenuSelection -Prompt 'Choose services:' -Options @('EC2', 'S3', 'RDS')
 ```
 
-### 2. Module Imports
-
+### Module Import
 ```powershell
-# Ensure AWS.Tools.* modules are loaded before any AWS API calls
-. ./Import-RequiredModules.ps1
+. ./Import-RequiredModules.ps1  # Loads AWS.Tools.* modules
 ```
 
-### 3. AWS SSO Initialization
-
+### SSO Authentication
 ```powershell
-# Establish an SSO session or skip if already valid
-Initialize-AndConnectAwsAccount \
-  -ProfileName 'sso-myorg-prod' \
-  -AccountId    '123456789012' \
-  -RoleName     'Org-FinOpsRole' \
-  -StartUrl     'https://myorg.awsapps.com/start/' \
-  -SSORegion    'eu-west-1' \
-  -SessionName  'MyOrg Tagging Session' \
-  -LogFilePath  $logPath
+Initialize-AndConnectAwsAccount `
+  -ProfileName 'sso-prod' `
+  -AccountId   '123456789012' `
+  -RoleName    'FinOpsRole' `
+  -StartUrl    'https://myorg.awsapps.com/start/' `
+  -SSORegion   'eu-west-1' `
+  -LogFilePath $logPath
 ```
 
-### 4. Logging
-
+### Logging
 ```powershell
-# Write a message to console and log file
 Write-Log -Message 'Export started' -Level INFO -LogFilePath $logPath
 
-# Aliases for common levels
-Write-LogWarning 'This is a warning'  
-Write-LogError   'This is an error'
+# Shortcuts
+Write-LogInformation 'Info message'
+Write-LogWarning 'Warning message'
+Write-LogError 'Error message'
 ```
 
----
-
-For sequencing these functions within the main toolkit flow, see the [scripts/core README](../core/README.md) and the [main README](../../README.md).
+**Log levels:** INFO, WARN, ERROR (with color-coded console output)

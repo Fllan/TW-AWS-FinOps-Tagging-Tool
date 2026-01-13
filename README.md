@@ -1,163 +1,86 @@
 # TW-AWS-FinOps-Tagging-Tool
 
-A turnkey PowerShell solution for **AWS-only** environments that streamlines:
+PowerShell solution for AWS resource tagging at scale. Export tags to CSV, edit in spreadsheets, apply back to AWS.
 
-* **Exporting** resource metadata and existing tags into CSVs
-* **Editing** tag values in a familiar spreadsheet format
-* **Applying** updated tags back to AWS resources across multiple accounts and regions via SSO
+**Created by Florent Lanternier at TeamWork**
 
-> Created by **Florent Lanternier** at **TeamWork**.
-
----
-
-## 🚀 1. Quick Start (for all users)
-
-1. **Open PowerShell as Administrator**
-   *(Right-click on PowerShell and choose "Run as administrator")*
-
-2. **Clone the repository**:
-
-   ```powershell
-   git clone https://github.com/Fllan/TW-AWS-FinOps-Tagging-Tool.git
-   cd TW-AWS-FinOps-Tagging-Tool
-   ```
-
-3. **Install required AWS modules** (admin rights required):
-
-   ```powershell
-   Install-Module -Name AWS.Tools.Common, AWS.Tools.EC2, AWS.Tools.S3, AWS.Tools.ElasticFileSystem, AWS.Tools.RDS, AWS.Tools.SavingsPlans, AWS.Tools.Pricing -Force
-   ```
-
-4. **Ensure SSO access**: You must be able to authenticate with AWS using `aws sso login` or equivalent
-
-5. **Run the tool**:
-
-   ```powershell
-   pwsh .\FinOpsTaggingTool.ps1
-   ```
-
-> 📌 This tool is built **exclusively for AWS** environments.
-
-
-
----
-
-
-
-## 🔧 2. Prerequisites
-
-* **Windows 10+ / PowerShell 7+**
-* **Admin rights** to install required modules
-* **AWS SSO** configured for your user and account access
-* **Git** or ZIP download to retrieve the repo
-
----
-
-## 🗂️ 3. Repository Layout
-
-```
-config/                # Organization-specific configuration files (SSO, account list, tag keys)
-csv/                   # Edited CSVs go here before applying
-docs/                  # Contains detailed README files per component
-logs/                  # Log output from tool runs
-scripts/
-  ├─ functions/        # Reusable helpers (SSO login, logging, etc.)
-  └─ core/             # Tagging logic per AWS service (export/apply)
-FinOpsTaggingTool.ps1  # Main entry script
-README.md              # This file (project overview)
-```
-
-
-
----
-
-
-
-## ⚙️ 4. Configuration
-
-1. **Copy template**:
-
-   ```
-   config/ClientTemplate.psd1 → config/MyOrg.psd1
-   ```
-
-2. **Edit** your new file:
-
-   * Set your SSO portal URL, role name, region
-   * List your AWS account IDs and regions
-   * Define required tag keys (e.g., `Environment`, `Owner`, `CostCenter`)
-
-3. Save and use it—no further setup needed
-
-📘 More info in [config/README.md](config/README.md)
-
-
-
----
-
-
-
-## 🛠️ 5. Usage
-
-### A. Export Tags
+## Quick Start
 
 ```powershell
+# 1. Clone repository
+git clone https://github.com/Fllan/TW-AWS-FinOps-Tagging-Tool.git
+cd TW-AWS-FinOps-Tagging-Tool
+
+# 2. Install AWS modules (requires admin)
+Install-Module -Name AWS.Tools.Common, AWS.Tools.EC2, AWS.Tools.S3, AWS.Tools.ElasticFileSystem, AWS.Tools.RDS, AWS.Tools.SavingsPlans, AWS.Tools.Pricing -Force
+
+# 3. Run tool
 pwsh .\FinOpsTaggingTool.ps1
 ```
 
-* Select your `MyOrg.psd1` config file
-* Choose account(s), service(s), and action: **Export**
-* Output CSVs will appear in `csv/output/`
+**Prerequisites:** Windows 10+, PowerShell 7+, AWS SSO configured
 
-### B. Edit Tags
+## Configuration
 
-* Open CSV files using Excel or another editor
-* Fill in missing tag values, leave blank to skip
-* Follow the format detailed here : [csv/README.md](csv/README.md)
-* Save into `csv/input/`
+1. Copy `config/ClientTemplate.psd1` to `config/MyOrg.psd1`
+2. Edit SSO details, account IDs, regions, and required tag keys
+3. Run tool and select your config file
 
-📘 More info in [csv/README.md](csv/README.md)
+See [config/README.md](config/README.md) for details.
 
-### C. Apply Tags
+## Workflow
 
-* Re-run the tool:
+### Export
+```powershell
+pwsh .\FinOpsTaggingTool.ps1
+```
+Select config → Choose accounts/services → Export → CSVs saved to `csv/output/`
 
-  ```powershell
-  pwsh .\FinOpsTaggingTool.ps1
-  ```
-* Select your config, pick **Apply**, confirm account and service
-* Tags will be applied based on edited CSVs
+### Edit
+Open CSV in Excel → Fill missing tag values → Save to `csv/input/`
 
+Format details: [csv/README.md](csv/README.md)
 
+### Apply
+```powershell
+pwsh .\FinOpsTaggingTool.ps1
+```
+Select config → Choose accounts/services → Apply → Tags updated in AWS
 
----
+## Supported Services
 
+- EC2 instances, volumes, snapshots
+- EC2 Savings Plans and pricing data
+- S3 buckets
+- EFS file systems
+- RDS database instances
+- SUSE Marketplace Agreements
 
+## Repository Structure
 
-## 🧠 6. Internals
+```
+config/                 # Client configurations (.psd1 files)
+csv/input/             # Edited CSVs for tag application
+csv/output/            # Exported CSVs from AWS
+logs/                  # Execution logs
+scripts/functions/     # Reusable utilities (SSO, logging, menus)
+scripts/core/export/   # Service-specific export functions
+scripts/core/apply/    # Tag application logic
+FinOpsTaggingTool.ps1  # Main entry point
+```
 
-* All AWS service-specific logic lives in [scripts/core/README.md](scripts/core/README.md)
-* General helper utilities (menus, SSO auth, logs) live in [scripts/functions/README.md](scripts/functions/README.md)
-* Input/Output CSV rules are documented in [csv/README.md](csv/README.md)
-* Configuration details
-*  covered in [config/README.md](config/README.md)
+## Extending
 
+To add new AWS services:
+1. Create `scripts/core/export/Export-<Service>.ps1`
+2. Add service to `$services` array in main script
+3. Add switch case for export and apply logic
+4. Update `Set-ResourceTagsFromCsv.ps1` with service tagging cmdlet
 
+See [scripts/core/README.md](scripts/core/README.md) and [scripts/functions/README.md](scripts/functions/README.md) for implementation details.
 
----
+## Troubleshooting
 
-
-
-## 📩 7. Support & Next Steps
-
-* **Logs**: Check `logs/` folder for detailed operation output
-* **Extend**: Add support for more AWS services using `Export-*` and `Set-ResourceTagsFromCsv.ps1`
-
-
-
----
-
-
-
-> Created by **Florent Lanternier**
-> TeamWork FinOps Team
+**Logs:** Check `logs/` folder for detailed execution output
+**Blank tags:** Verify `requiredTagKeys` in config match AWS tag keys exactly (case-sensitive)
+**SSO issues:** Ensure `aws sso login` works before running tool

@@ -1,57 +1,66 @@
-# scripts/core/README.md
+# Core Scripts
 
-Core PowerShell functions for exporting resource metadata and applying tags.
+Export AWS resource metadata and apply tags from CSV.
 
-## Layout
+## Structure
 
 ```
-apply/
-└── Set-ResourceTagsFromCsv.ps1   # Reads a single CSV per service and applies non-empty tags
-
 export/
-├── Export-EC2Instances.ps1      # Instances
-├── Export-EC2Volumes.ps1        # Volumes
-├── Export-S3Buckets.ps1         # Buckets
-├── Export-EFSFileSystems.ps1    # EFS
-└── Export-RDSDBInstances.ps1    # RDS
+├── Export-EC2Instances.ps1              # EC2 instances
+├── Export-EC2Volumes.ps1                # EBS volumes
+├── Export-EC2OnDemandAndSPRates.ps1     # Pricing data
+├── Export-EC2SavingsPlans.ps1           # Savings Plans
+├── Export-S3Buckets.ps1                 # S3 buckets
+├── Export-EFSFileSystems.ps1            # EFS file systems
+├── Export-RDSDBInstances.ps1            # RDS databases
+├── Export-SUSEMarketplaceAgreements.ps1 # SUSE agreements
+└── Update-BadTagValuesOnSnapshots.ps1   # Snapshot tag fixes
+
+apply/
+└── Set-ResourceTagsFromCsv.ps1          # Apply tags from CSV
 ```
 
-## Function Signatures
+## Export Functions
 
-**Export-<Service>**
-
+**Signature:**
 ```powershell
-Export-<Service> \
-  -Account <hashtable>        # @{ name; accountId; profileName; regions } \
-  -Regions <string[]>         # AWS regions to query \
-  -LogFilePath <string>       # Path to write logs \
-  -OutputCsvDir <string>      # Directory for CSV output \
-  -RequiredTagKeys <string[]> # List of tag keys to export
+Export-<Service> -Account <hashtable> -Regions <string[]> -LogFilePath <string> -OutputCsvDir <string> -RequiredTagKeys <string[]>
 ```
 
-**Set-ResourceTagsFromCsv**
+**Behavior:**
+1. Query AWS API across all specified regions
+2. Create CSV with columns for required tag keys
+3. Populate existing tag values from AWS
+4. Write to `csv/output/`
 
+**Troubleshooting:** Blank columns mean AWS tag keys don't match `requiredTagKeys` (case-sensitive).
+
+## Apply Function
+
+**Signature:**
 ```powershell
-Set-ResourceTagsFromCsv \
-  -Service <string>       # ec2-instances, ec2-volumes, s3-buckets, efs, rds \
-  -Account <hashtable>    # @{ name; accountId; profileName; regions } \
-  -InputCsvDir <string>   # Directory with exactly one edited CSV \
-  -LogFilePath <string>   # Path for logs
+Set-ResourceTagsFromCsv -Service <string> -Account <hashtable> -InputCsvDir <string> -LogFilePath <string>
 ```
 
-## How Exports Handle Tags
+**Behavior:**
+1. Read single CSV from `csv/input/`
+2. Apply non-empty tag values to AWS resources
+3. Skip empty cells (leaves existing tags unchanged)
 
-1. **Pre-populate** blank columns for each required tag key.
-2. **Overlay**: any existing resource tags matching required keys replace blanks.
+**Services:** `ec2-instances`, `ec2-volumes`, `s3-buckets`, `efs`, `rds`
 
-If you see blanks for tags that exist, check your `RequiredTagKeys` match AWS tag keys (watch for typos).
+## Adding New Services
 
-## Workflow
+1. Create `export/Export-<Service>.ps1` following existing patterns
+2. Add service to `$services` in `FinOpsTaggingTool.ps1`
+3. Add dot-source line to main script imports
+4. Add switch cases for export and apply
+5. Update `Set-ResourceTagsFromCsv.ps1` with service-specific tagging cmdlet
 
-1. **Export** resources → CSV with existing tag values in place.
-2. **Edit** CSV: fill missing tag values.
-3. **Apply**: `Set-ResourceTagsFromCsv` writes back non-empty tags.
+**AWS Tagging Cmdlets:**
+- EC2: `New-EC2Tag`
+- S3: `Write-S3BucketTagging`
+- EFS: `Add-EFSResourceTag`
+- RDS: `Add-RDSTagsToResource`
 
-For CSV format details and examples, see the dedicated [CSV Format README](../csv-format/README.md).
-
-For full project setup, refer to the [main README](../../README.md).
+See [CSV format](../../csv/README.md) for input/output specifications.

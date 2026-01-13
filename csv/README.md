@@ -1,40 +1,27 @@
-# csv/README.md
+# CSV Files
 
-This directory contains the CSV files used to apply tags to AWS resources.
+Export CSVs → `csv/output/`
+Input CSVs → `csv/input/`
 
----
+## Format
 
-## Input CSV Format for Tagging
+**First column:** Resource identifier (service-specific)
+- `InstanceId` - EC2 instances
+- `VolumeId` - EBS volumes
+- `BucketName` - S3 buckets
+- `FileSystemId` - EFS
+- `DBInstanceIdentifier` - RDS
 
-When applying tags using `Set-ResourceTagsFromCsv.ps1`, the input CSV must follow this format:
+**Remaining columns:** Tag keys (case-sensitive)
 
-### Structure
+## Rules
 
-* **First column**: the AWS resource identifier
+- **Do not modify** first column (resource IDs)
+- **Non-empty cells** = tags will be applied
+- **Empty cells** = existing tags unchanged
+- Tag keys must match AWS exactly (case-sensitive)
 
-  * Examples:
-
-    * `InstanceId` for EC2 instances
-    * `VolumeId` for EC2 volumes
-    * `BucketName` for S3 buckets
-    * `FileSystemId` for EFS file systems
-    * `DBInstanceIdentifier` for RDS instances
-
-* **Remaining columns**: tag keys and their values
-
-  * Each header (excluding the identifier) becomes a tag key
-  * Tag keys are **case-sensitive** — exact spelling matters
-
-### Rules
-
-* Do **not** modify the header or values in the first (identifier) column
-* Only non-empty cells will result in a tag being applied
-* Empty cells will leave existing tags unchanged
-* Invalid keys or unauthorized changes will be logged as errors
-
----
-
-## Example Input CSV
+## Example
 
 ```csv
 InstanceId,Environment,Owner,CostCenter
@@ -42,22 +29,24 @@ i-0123456789abcdef0,Prod,jane.doe,12345
 i-0fedcba9876543210,,john.smith,67890
 ```
 
-In this example:
+**Result:**
+- First instance: All 3 tags applied
+- Second instance: Only `Owner` and `CostCenter` applied (Environment skipped)
 
-* The first row sets all three tags on `i-0123456789abcdef0`
-* The second row will skip the `Environment` tag for `i-0fedcba9876543210`
+## Workflow
 
----
+### Export
+1. Run tool → Export
+2. CSVs saved to `csv/output/` with existing tags populated
 
-## Applying Tags
+### Edit
+1. Open CSV in Excel/editor
+2. Fill missing tag values
+3. Save to `csv/input/`
 
-To apply tags using your CSV:
+### Apply
+1. Run tool → Apply
+2. Only one CSV allowed in `csv/input/`
+3. Tags updated in AWS
 
-1. Place the edited CSV in this `csv/input/` directory
-2. Run the script and select `Apply`
-
-The script will match resources by the ID in the first column and apply any non-empty tag values.
-
----
-
-For export behavior and tagging logic, refer to the [core scripts README](../scripts/core/README.md).
+**Note:** Input CSVs must use `Identifier` as first column header when applying tags.

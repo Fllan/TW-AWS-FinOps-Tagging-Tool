@@ -14,3 +14,6 @@ Thumbs.db
 *.ps1xml
 *.psc1
 *.pssc
+
+# Ignore LLM
+CLAUDE.md
